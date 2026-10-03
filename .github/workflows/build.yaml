@@ -37,6 +37,9 @@ jobs:
       - name: Create cache folder
         run: mkdir -p cache
 
+      - name: pull changes
+        run: git pull
+        
       - name: Update README SVG
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
