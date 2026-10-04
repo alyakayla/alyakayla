@@ -139,9 +139,20 @@ def graph_repos_stars(count_type, owner_affiliation, cursor=None, add_loc=0, del
         if count_type == "repos":
             return request.json()["data"]["user"]["repositories"]["totalCount"]  # type: ignore
         elif count_type == "stars":
-            return stars_counter(
-                request.json()["data"]["user"]["repositories"]["edges"]  # type: ignore
+            repositories = request.json()["data"]["user"]["repositories"]  # type: ignore
+            stars = stars_counter(
+                drop_inaccessible(repositories["edges"], "graph_repos_stars")
             )
+            # keep paging, otherwise stars past the first 100 repos are never counted
+            if repositories["pageInfo"]["hasNextPage"]:
+                stars += graph_repos_stars(
+                    count_type,
+                    owner_affiliation,
+                    repositories["pageInfo"]["endCursor"],
+                    add_loc,
+                    del_loc,
+                )
+            return stars
 
 
 # Uses GitHub's GraphQL v4 API and cursor pagination to fetch 100 commits from a repository at a time
@@ -264,9 +275,11 @@ def loc_counter_one_repo(
 # requests and also give a 502 error.
 # # Returns the total number of lines of code in all repositories
 def loc_query(
-    owner_affiliation, comment_size=0, force_cache=False, cursor=None, edges=[]
+    owner_affiliation, comment_size=0, force_cache=False, cursor=None, edges=None
 ):
     query_count("loc_query")
+    if edges is None:
+        edges = []  # never use a mutable default argument, it persists across calls
     query = """
     query ($owner_affiliation: [RepositoryAffiliation], $login: String!, $cursor: String) {
         user(login: $login) {
@@ -315,7 +328,10 @@ def loc_query(
         )
     else:
         return cache_builder(
-            edges + request.json()["data"]["user"]["repositories"]["edges"],  # type: ignore
+            drop_inaccessible(
+                edges + request.json()["data"]["user"]["repositories"]["edges"],  # type: ignore
+                "loc_query",
+            ),
             comment_size,
             force_cache,
         )
@@ -386,6 +402,8 @@ def cache_builder(edges, comment_size, force_cache, loc_add=0, loc_del=0):
                     )
             except TypeError:  # If the repo is empty
                 data[index] = repo_hash + " 0 0 0 0\n"
+            except KeyError:  # If the repo disappeared or became unreadable
+                data[index] = repo_hash + " 0 0 0 0\n"
     with open(filename, "w") as f:
         f.writelines(cache_comment)
         f.writelines(data)
@@ -413,30 +431,6 @@ def flush_cache(edges, filename, comment_size):
             )
 
 
-# Function retrivies data from deleted repos
-def add_archive():
-    with open("cache/repository_archive.txt", "r") as f:
-        data = f.readlines()
-    old_data = data
-    data = data[7 : len(data) - 3]
-    added_loc, deleted_loc, added_commits = 0, 0, 0
-    contributed_repos = len(data)
-    for line in data:
-        repo_hash, total_commits, my_commits, *loc = line.split()
-        added_loc += int(loc[0])
-        deleted_loc += int(loc[1])
-        if my_commits.isdigit():
-            added_commits += int(my_commits)
-    added_commits += int(old_data[-1].split()[4][:-1])
-    return [
-        added_loc,
-        deleted_loc,
-        added_loc - deleted_loc,
-        added_commits,
-        contributed_repos,
-    ]
-
-
 # Forces the file to close, preserving whatever data was written to it This is needed because if this function is called, the program would've crashed before the file is properly saved and closed
 def force_close_file(data, cache_comment):
     filename = "cache/" + hashlib.sha256(USER_NAME.encode("utf-8")).hexdigest() + ".txt"
@@ -450,11 +444,37 @@ def force_close_file(data, cache_comment):
     )
 
 
+# GitHub returns an edge with a null node for any repository the token is not
+# allowed to read (private repo, fine-grained PAT without that repo selected,
+# GitHub App that was not granted access to it). Those edges have to be dropped
+# before anything tries to subscript them, otherwise the whole run dies with
+# "TypeError: 'NoneType' object is not subscriptable".
+def drop_inaccessible(edges, func_name):
+    kept = []
+    skipped = 0
+    for edge in edges or []:
+        if (edge or {}).get("node") is None:
+            skipped += 1
+        else:
+            kept.append(edge)
+    if skipped:
+        print(
+            "   note:",
+            func_name + ":",
+            "skipped",
+            skipped,
+            "repo(s) the access token cannot read (stats will be undercounts)",
+        )
+    return kept
+
+
 # Count total stars in repositories owned by me
 def stars_counter(data):
     total_stars = 0
-    for node in data:
-        total_stars += node["node"]["stargazers"]["totalCount"]
+    for edge in data:
+        stargazers = edge["node"].get("stargazers")
+        if stargazers is not None:
+            total_stars += stargazers["totalCount"]
     return total_stars
 
 
@@ -595,7 +615,7 @@ def formatter(query_type, difference, funct_return=False, whitespace=0):
 
 
 # define global variable for owner ID and calculate user's creation date
-# # e.g {'id': 'MDQ6VXNlcjU3MzMxMTM0'} and 2019-11-03T21:15:07Z for username 'RussellChubb'
+# # e.g {'id': 'MDQ6VXNlcjMzMjYxMzEzNA=='} and 2019-11-03T21:15:07Z for the username 'alyakayla'
 if __name__ == "__main__":
     print("Calculation times:")
     user_data, user_time = perf_counter(user_getter, USER_NAME)
@@ -618,14 +638,6 @@ if __name__ == "__main__":
         graph_repos_stars, "repos", ["OWNER", "COLLABORATOR", "ORGANIZATION_MEMBER"]
     )
     follower_data, follower_time = perf_counter(follower_getter, USER_NAME)
-
-    # several repositories that I've contributed to have since been deleted.
-    if OWNER_ID == {"id": "148021422"}:  # only calculate for user RussellChubb
-        archived_data = add_archive()
-        for index in range(len(total_loc) - 1):
-            total_loc[index] += archived_data[index]
-        contrib_data += archived_data[-1]  # type: ignore
-        commit_data += int(archived_data[-2])
 
     for index in range(len(total_loc) - 1):
         total_loc[index] = "{:,}".format(
