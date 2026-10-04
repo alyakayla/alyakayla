@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SVG_NS = {"svg": "http://www.w3.org/2000/svg"}
-BIRTHDAY = datetime.datetime(2006, 09, 04)
+BIRTHDAY = datetime.datetime(year=2006, month=09, day=04)
 
 HEADERS = {"authorization": "token " + os.environ["ACCESS_TOKEN"]}
 USER_NAME = os.environ["USER_NAME"]
