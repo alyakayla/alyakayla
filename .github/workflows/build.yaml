@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # lets the default GITHUB_TOKEN push the updated SVGs
 
     steps:
       - name: Checkout repository
@@ -49,5 +51,9 @@ jobs:
           git commit -m "chore: update README stats" || echo "No changes to commit"
 
       - name: Push changes
-        run: |
-          git push https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+        # plain `git push` reuses the credentials actions/checkout stored in the
+        # local git config. Pushing to a token-in-URL does NOT work here:
+        # checkout's http.https://github.com/.extraheader wins over URL credentials,
+        # so the push is attempted as github-actions[bot] with the default read-only
+        # GITHUB_TOKEN and the remote rejects it. Hence permissions: contents: write above.
+        run: git push
