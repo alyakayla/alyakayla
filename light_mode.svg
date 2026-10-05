@@ -41,7 +41,7 @@
 
 <text x="600" y="30" fill="#2d3a4a">
 <tspan x="600" y="30"> ~/kayla</tspan>
-<tspan x="600" y="70" class="cc">. </tspan><tspan class="key"> Uptime</tspan>:<tspan class="cc" id="age_data_dots"> ............................ </tspan><tspan class="value" id="age_data">20 years, 1 month, 0 days</tspan>
+<tspan x="600" y="70" class="cc">. </tspan><tspan class="key"> Uptime</tspan>:<tspan class="cc" id="age_data_dots"> ............................. </tspan><tspan class="value" id="age_data">20 years, 1 month, 1 day</tspan>
 <tspan x="600" y="110" class="cc">. </tspan><tspan class="key"> Location</tspan>:<tspan class="cc"> ............... </tspan><tspan class="value">brazil</tspan>
 <tspan x="600" y="170" class="cc">. </tspan><tspan class="key"> Languages</tspan>.<tspan class="key">Programming</tspan>:<tspan class="cc"> ...................... </tspan><tspan class="value">python, rust, typescript</tspan>
 <tspan x="600" y="210" class="cc">. </tspan><tspan class="key"> Languages</tspan>.<tspan class="key">Real</tspan>:<tspan class="cc"> ...... </tspan><tspan class="value">us-en, pt-br</tspan>
