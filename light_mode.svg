@@ -103,7 +103,7 @@
 <!-- ~/contact -->
 <text x="100" y="545" class="header">- ~/contact</text>
 <text x="100" y="570">
-<tspan class="cc">. </tspan><tspan class="key">email</tspan><tspan class="cc">~~</tspan><tspan class="key">work</tspan><tspan class="cc">:</tspan><tspan class="cc"> ......... </tspan><tspan class="value">kayla.ls@proton.me</tspan>
+<tspan class="cc">. </tspan><tspan class="key"></tspan><tspan class="cc"></tspan><tspan class="key"></tspan><tspan class="cc">:</tspan><tspan class="cc"></tspan><tspan class="value">kayla.ls@proton.me</tspan>
 </text>
 
 </svg>
