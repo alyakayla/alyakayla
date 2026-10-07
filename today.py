@@ -1,3 +1,5 @@
+# This entire, awesome setup was originally made by https://github.com/RussellChubb/RussellChubb, simply adapted to my info. Follow them!!
+
 # Imports
 import datetime
 from dateutil import relativedelta
