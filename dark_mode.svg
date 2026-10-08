@@ -90,7 +90,7 @@
 <!-- hobbies -->
 <text x="740" y="350">
 <tspan class="value">writing, photography,</tspan>
-<tspan x="740" y="370"><tspan class="value">games, music, art</tspan></tspan>
+<tspan x="740" y="380"><tspan class="value">games, music, art</tspan></tspan>
 </text>
 
 <!-- gh stats -->
